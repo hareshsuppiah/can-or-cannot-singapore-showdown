@@ -23,6 +23,7 @@ A host-led Singapore trivia game for two teams, built for a live hawker-food ses
 | --- | --- | --- |
 | Select first team | Team button | `1` or `2` |
 | Enter answer | A–D button | `A`, `B`, `C` or `D` |
+| Enter automatic steal | A–D button after the steal banner appears | `A`, `B`, `C` or `D` |
 | Pause or resume countdown | Timer control | `Space` |
 | Reveal without scoring | Reveal answer | `R` |
 | Move to next question | Next | `→` |
