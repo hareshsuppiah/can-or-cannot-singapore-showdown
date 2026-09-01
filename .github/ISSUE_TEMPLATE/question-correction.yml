@@ -1,0 +1,24 @@
+name: Question correction
+description: Report an inaccurate, ambiguous or outdated question
+title: "Correction: "
+labels: [question-correction]
+body:
+  - type: input
+    id: question
+    attributes:
+      label: Existing question
+      description: Paste the question text or identify its round and number.
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What should be corrected?
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Supporting source URL
+    validations:
+      required: true

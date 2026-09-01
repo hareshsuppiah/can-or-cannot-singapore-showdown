@@ -1,0 +1,20 @@
+{
+  "name": "can-or-cannot-singapore-showdown",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node node_modules/vite/bin/vite.js --host 0.0.0.0",
+    "build": "node node_modules/vite/bin/vite.js build",
+    "build:sites": "npm run build && node scripts/build-worker.mjs",
+    "validate": "node scripts/validate-questions.mjs",
+    "preview": "node node_modules/vite/bin/vite.js preview --host 0.0.0.0"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "latest",
+    "vite": "latest",
+    "react": "latest",
+    "react-dom": "latest"
+  },
+  "devDependencies": {}
+}
