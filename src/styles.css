@@ -11,7 +11,7 @@
 :root{--green:#087a3f}
 .buzz-zone button.steal{background:#111;color:#fff}
 .answer-status{border:3px solid #111;border-bottom:0;padding:10px 14px;font-weight:800;text-transform:uppercase;letter-spacing:.025em;background:#fff}
-.answer-status.steal-status{border-color:var(--red);color:var(--red)}
+.answer-status.steal-status{border-color:#111;background:#111;color:#fff}
 .answers button:disabled{cursor:default;opacity:1}
 .answers button:not(:disabled):hover{background:#f4f4f4}
 .answers button.correct-auto,.answers button.correct-auto.selected{background:#fff;color:#050505;outline:6px solid var(--green);outline-offset:-6px;text-decoration:none}
