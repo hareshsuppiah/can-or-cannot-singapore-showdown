@@ -12,7 +12,7 @@ A host-led Singapore trivia game for two teams, built for a live hawker-food ses
 - Representatives yell their team name: **Kopi** or **Tea** by default.
 - The host selects the team that called first, then enters the spoken answer: A, B, C or D.
 - A correct answer earns 100 points automatically.
-- A wrong answer opens an automatic steal for the other team.
+- A wrong answer automatically hands the other team one attempt to steal the same 100 points; no second buzz is required.
 - Each theme has one 30-second countdown. It starts automatically, pauses on a buzz, and resumes on the next question without resetting.
 - Built-in game-show cues distinguish buzz-ins, correct answers, wrong answers and time-outs.
 - Each question includes a short explanation and a source link.
