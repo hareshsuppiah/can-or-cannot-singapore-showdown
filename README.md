@@ -6,12 +6,15 @@ A host-led Singapore trivia game for two teams, built for a live hawker-food ses
 
 ## Game format
 
-- 8 rounds with 20 sourced questions per round.
+- 8 player-selected themes with 20 sourced questions each.
+- The host asks the players to choose a theme, then selects it on the category board.
 - Two representatives face off at a time.
 - Representatives yell their team name: **Kopi** or **Tea** by default.
 - The host selects the team that called first, then enters the spoken answer: A, B, C or D.
 - A correct answer earns 100 points automatically.
 - A wrong answer opens an automatic steal for the other team.
+- The countdown starts automatically for each question and pauses on a buzz.
+- Built-in game-show cues distinguish buzz-ins, correct answers, wrong answers and time-outs.
 - Each question includes a short explanation and a source link.
 
 ## Host controls
@@ -20,7 +23,7 @@ A host-led Singapore trivia game for two teams, built for a live hawker-food ses
 | --- | --- | --- |
 | Select first team | Team button | `1` or `2` |
 | Enter answer | A–D button | `A`, `B`, `C` or `D` |
-| Start or pause timer | Timer control | `Space` |
+| Pause or resume countdown | Timer control | `Space` |
 | Reveal without scoring | Reveal answer | `R` |
 | Move to next question | Next | `→` |
 

@@ -6,6 +6,75 @@ import './styles.css';
 const DEFAULT_TEAMS = ['Kopi', 'Tea'];
 const reactions = ['Steady lah.', 'Can. Definitely can.', 'Wah, knowledge power.', 'Shiok answer.', 'No blur already.'];
 
+function audioContextFor(ref) {
+  const Ctx = window.AudioContext || window.webkitAudioContext;
+  if (!Ctx) return null;
+  const ctx = ref.current || (ref.current = new Ctx());
+  if (ctx.state === 'suspended') ctx.resume();
+  return ctx;
+}
+
+function scheduleTone(ctx, { frequency, offset = 0, duration = .16, type = 'triangle', gain = .08, endFrequency = frequency }) {
+  const start = ctx.currentTime + .015 + offset;
+  const oscillator = ctx.createOscillator();
+  const volume = ctx.createGain();
+  oscillator.type = type;
+  oscillator.frequency.setValueAtTime(frequency, start);
+  oscillator.frequency.exponentialRampToValueAtTime(Math.max(20, endFrequency), start + duration);
+  volume.gain.setValueAtTime(.0001, start);
+  volume.gain.exponentialRampToValueAtTime(gain, start + .012);
+  volume.gain.exponentialRampToValueAtTime(.0001, start + duration);
+  oscillator.connect(volume).connect(ctx.destination);
+  oscillator.start(start);
+  oscillator.stop(start + duration + .02);
+}
+
+function playGameShowCue(ref, cue, team = 0) {
+  try {
+    const ctx = audioContextFor(ref);
+    if (!ctx) return;
+    if (cue === 'correct') {
+      [
+        { frequency: 523.25, offset: 0, duration: .18 },
+        { frequency: 659.25, offset: .11, duration: .18 },
+        { frequency: 783.99, offset: .22, duration: .2 },
+        { frequency: 1046.5, offset: .34, duration: .48, gain: .1 },
+        { frequency: 659.25, offset: .34, duration: .48, gain: .045, type: 'sine' },
+        { frequency: 783.99, offset: .34, duration: .48, gain: .045, type: 'sine' }
+      ].forEach(note => scheduleTone(ctx, note));
+      return;
+    }
+    if (cue === 'wrong') {
+      scheduleTone(ctx, { frequency: 185, endFrequency: 92, duration: .82, type: 'sawtooth', gain: .105 });
+      scheduleTone(ctx, { frequency: 123, endFrequency: 68, offset: .035, duration: .76, type: 'square', gain: .045 });
+      return;
+    }
+    if (cue === 'buzz') {
+      const base = team === 0 ? 440 : 554.37;
+      scheduleTone(ctx, { frequency: base, duration: .1, type: 'square', gain: .07 });
+      scheduleTone(ctx, { frequency: base * 1.5, offset: .1, duration: .18, type: 'triangle', gain: .09 });
+      return;
+    }
+    if (cue === 'tick') {
+      scheduleTone(ctx, { frequency: 1100, duration: .045, type: 'square', gain: .035 });
+      return;
+    }
+    if (cue === 'timeout') {
+      [220, 185, 146.83].forEach((frequency, i) => scheduleTone(ctx, { frequency, offset: i * .17, duration: .22, type: 'sawtooth', gain: .075 }));
+      return;
+    }
+    if (cue === 'reveal') {
+      scheduleTone(ctx, { frequency: 392, duration: .16, gain: .06 });
+      scheduleTone(ctx, { frequency: 587.33, offset: .12, duration: .3, gain: .08 });
+      return;
+    }
+    if (cue === 'roundStart') {
+      scheduleTone(ctx, { frequency: 329.63, duration: .12, gain: .055 });
+      scheduleTone(ctx, { frequency: 493.88, offset: .1, duration: .24, gain: .075 });
+    }
+  } catch {}
+}
+
 function Icon({ name }) {
   const common = { width: 22, height: 22, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'square', strokeLinejoin: 'miter', 'aria-hidden': true };
   if (name === 'play') return <svg {...common}><path d="M7 4l13 8-13 8z" fill="currentColor" stroke="none"/></svg>;
@@ -21,13 +90,14 @@ function Welcome({ onStart }) {
   const [sound, setSound] = useState(true);
   const [teams, setTeams] = useState(DEFAULT_TEAMS);
   const [setup, setSetup] = useState(false);
+  const previewAudioRef = useRef(null);
 
   const updateTeam = (i, value) => setTeams(prev => prev.map((t, n) => n === i ? value : t));
   return <main className="welcome">
     <section className="welcome-title">
       <h1>CAN OR<br/>CANNOT?</h1>
       <div className="showdown">The Singapore Showdown</div>
-      <p>8 rounds · 160 questions · one very serious fight over kaya toast</p>
+      <p>8 pick-your-own themes · 160 questions · one very serious fight over kaya toast</p>
       <div className="welcome-actions">
         <button className="primary" onClick={() => onStart({ teams, seconds, sound })}>Start game <Icon name="next"/></button>
         <button className="secondary" onClick={() => setSetup(v => !v)}>Host setup</button>
@@ -40,33 +110,46 @@ function Welcome({ onStart }) {
     <div className="question-mark" aria-hidden="true">?</div>
     <section className="setup-bar">
       <button onClick={() => setSetup(true)}>2 teams · host-led</button>
-      <label><span>Timer</span><select value={seconds} onChange={e => setSeconds(Number(e.target.value))}>{[10,15,20,30].map(n => <option key={n} value={n}>{n} seconds</option>)}</select></label>
+      <label><span>Auto timer</span><select value={seconds} onChange={e => setSeconds(Number(e.target.value))}>{[10,15,20,30].map(n => <option key={n} value={n}>{n} seconds</option>)}</select></label>
       <label className="sound-label"><input type="checkbox" checked={sound} onChange={e => setSound(e.target.checked)}/> Sound {sound ? 'on' : 'off'}</label>
     </section>
     {setup && <div className="setup-modal" role="dialog" aria-modal="true" aria-labelledby="setup-title">
       <div className="modal-sheet">
         <div className="modal-head"><h2 id="setup-title">Host setup</h2><button onClick={() => setSetup(false)} aria-label="Close">×</button></div>
-        <p className="setup-explainer">Two representatives face off. You read the question; the first player to yell their team name earns the first answer.</p>
+        <p className="setup-explainer">Two representatives face off. Let the players choose a theme, then you tap it. Read the question; the first player to yell their team name earns the first answer.</p>
         <div className="team-inputs">{teams.map((team, i) => <div className="team-setup" key={i}><label>Team {i + 1}<input value={team} onChange={e => updateTeam(i, e.target.value)} maxLength={22}/></label></div>)}</div>
-        <p className="host-note">Host keys: 1 / 2 register the first team · A / B / C / D enter their answer · Space pauses · R reveals · → next.</p>
+        <div className="sound-preview"><strong>Game-show sound check</strong><button onClick={() => playGameShowCue(previewAudioRef, 'correct')}>▶ Correct fanfare</button><button onClick={() => playGameShowCue(previewAudioRef, 'wrong')}>▶ Wrong buzzer</button></div>
+        <p className="host-note">The countdown starts automatically and pauses on a buzz. Host keys: 1 / 2 register the first team · A / B / C / D enter their answer · Space pauses · R reveals · → next.</p>
         <button className="primary full" onClick={() => setSetup(false)}>Ready, can!</button>
       </div>
     </div>}
   </main>;
 }
 
-function RoundIntro({ roundIndex, teams, onBegin, onHome }) {
+function ThemeBoard({ completedRounds, teams, scores, onPick, onHome }) {
+  return <main className="theme-board">
+    <header className="theme-board-head"><div><p>Host-controlled category board</p><h1>Pick a theme</h1><span>Ask the players what they want. You tap their choice.</span></div><div className="theme-score">{teams.map((team, i) => <div key={team + i}><span>{team}</span><strong>{scores[i]}</strong></div>)}</div></header>
+    <section className="theme-grid" aria-label="Available themes">{rounds.map((round, i) => {
+      const completed = completedRounds.includes(i);
+      return <button key={round.title} disabled={completed} onClick={() => onPick(i)} className={completed ? 'theme-card completed' : 'theme-card'}><small>Theme {String(i + 1).padStart(2, '0')}</small><strong>{round.title}</strong><span>{completed ? 'Played ✓' : '20 questions →'}</span></button>;
+    })}</section>
+    <footer className="theme-board-foot"><span>{completedRounds.length} of {rounds.length} themes played</span><button className="text-button" onClick={onHome}>Back to lobby</button></footer>
+  </main>;
+}
+
+function RoundIntro({ roundIndex, completedCount, teams, onBegin, onBack, onHome }) {
   const r = rounds[roundIndex];
   const [reps, setReps] = useState(['Representative 1', 'Representative 2']);
   return <main className="round-intro">
     <div className="round-number">{String(roundIndex + 1).padStart(2, '0')}</div>
     <div className="round-intro-copy">
-      <p>Round {roundIndex + 1} of 8</p>
+      <p>Chosen theme · {completedCount + 1} of 8 to play</p>
       <h1>{r.title}</h1>
       <div className="round-rule"/>
       <p className="round-desc">{r.description}</p>
       <div className="rep-call"><strong>Send up one representative per team</strong>{teams.map((team,i) => <label key={team}>{team}<input value={reps[i]} onChange={e => setReps(v => v.map((x,n) => n === i ? e.target.value : x))}/></label>)}</div>
       <button className="primary" onClick={() => onBegin(reps)}>Start round <Icon name="play"/></button>
+      <button className="text-button" onClick={onBack}>Pick another theme</button>
       <button className="text-button" onClick={onHome}>Back to lobby</button>
     </div>
   </main>;
@@ -87,7 +170,7 @@ function Scoreboard({ teams, reps, scores }) {
 }
 
 function Quiz({ config, onHome }) {
-  const [roundIndex, setRoundIndex] = useState(0);
+  const [roundIndex, setRoundIndex] = useState(null);
   const [questionIndex, setQuestionIndex] = useState(-1);
   const [time, setTime] = useState(config.seconds);
   const [running, setRunning] = useState(false);
@@ -100,19 +183,20 @@ function Quiz({ config, onHome }) {
   const [denied, setDenied] = useState([]);
   const [wrongChoices, setWrongChoices] = useState([]);
   const [finished, setFinished] = useState(false);
+  const [completedRounds, setCompletedRounds] = useState([]);
   const audioRef = useRef(null);
 
-  const question = questionIndex >= 0 ? rounds[roundIndex].questions[questionIndex] : null;
+  const question = roundIndex !== null && questionIndex >= 0 ? rounds[roundIndex].questions[questionIndex] : null;
   useEffect(() => {
     if (!running || revealed || time <= 0) return;
-    const id = setInterval(() => setTime(t => t - 1), 1000);
-    return () => clearInterval(id);
+    const id = setTimeout(() => setTime(t => Math.max(0, t - 1)), 1000);
+    return () => clearTimeout(id);
   }, [running, revealed, time]);
   useEffect(() => {
     if (!config.sound || !running) return;
-    if (time <= 5 && time > 0) beep(520, .055);
-    if (time === 0) { beep(180, .35); setRunning(false); }
-  }, [time]);
+    if (time <= 5 && time > 0) playGameShowCue(audioRef, 'tick');
+    if (time === 0) { playGameShowCue(audioRef, 'timeout'); setRunning(false); }
+  }, [time, running, config.sound]);
   useEffect(() => {
     const key = e => {
       if (e.target instanceof Element && e.target.matches('input, select, textarea, [contenteditable="true"]')) return;
@@ -126,19 +210,22 @@ function Quiz({ config, onHome }) {
     };
     document.addEventListener('keydown', key, true); return () => document.removeEventListener('keydown', key, true);
   });
-  const beep = (freq, duration) => {
-    try { const Ctx = window.AudioContext || window.webkitAudioContext; const ctx = audioRef.current || (audioRef.current = new Ctx()); const o = ctx.createOscillator(); const g = ctx.createGain(); o.frequency.value = freq; g.gain.setValueAtTime(.06, ctx.currentTime); g.gain.exponentialRampToValueAtTime(.001, ctx.currentTime + duration); o.connect(g).connect(ctx.destination); o.start(); o.stop(ctx.currentTime + duration); } catch {}
-  };
-  const startRound = nextReps => { setReps(nextReps); setQuestionIndex(0); setTime(config.seconds); setRunning(false); setRevealed(false); setSelected(null); setAwarded([]); setBuzzed(null); setDenied([]); setWrongChoices([]); };
-  const reveal = () => { if (!question) return; setRevealed(true); setRunning(false); if (config.sound) beep(740, .12); };
+  const resetQuestionState = () => { setTime(config.seconds); setRunning(true); setRevealed(false); setSelected(null); setAwarded([]); setBuzzed(null); setDenied([]); setWrongChoices([]); };
+  const chooseRound = index => { if (completedRounds.includes(index)) return; setRoundIndex(index); setQuestionIndex(-1); setRunning(false); };
+  const startRound = nextReps => { setReps(nextReps); setQuestionIndex(0); resetQuestionState(); if (config.sound) playGameShowCue(audioRef, 'roundStart'); };
+  const reveal = () => { if (!question) return; setRevealed(true); setRunning(false); if (config.sound) playGameShowCue(audioRef, 'reveal'); };
   const next = () => {
     if (!question) return;
-    if (questionIndex < 19) { setQuestionIndex(i => i + 1); setTime(config.seconds); setRunning(false); setRevealed(false); setSelected(null); setAwarded([]); setBuzzed(null); setDenied([]); setWrongChoices([]); }
-    else if (roundIndex < 7) { setRoundIndex(i => i + 1); setQuestionIndex(-1); setRunning(false); }
-    else { setFinished(true); setQuestionIndex(-1); setRunning(false); }
+    if (questionIndex < 19) { setQuestionIndex(i => i + 1); resetQuestionState(); return; }
+    const nextCompleted = completedRounds.includes(roundIndex) ? completedRounds : [...completedRounds, roundIndex];
+    setCompletedRounds(nextCompleted);
+    setQuestionIndex(-1);
+    setRunning(false);
+    if (nextCompleted.length === rounds.length) setFinished(true);
+    else setRoundIndex(null);
   };
-  const award = i => { if (i >= config.teams.length || awarded.includes(i)) return; setScores(s => s.map((v, n) => n === i ? v + 100 : v)); setAwarded(a => [...a, i]); if (config.sound) beep(880, .08); };
-  const registerBuzz = i => { if (buzzed !== null || denied.includes(i) || revealed) return; setBuzzed(i); setRunning(false); if (config.sound) beep(i === 0 ? 660 : 820, .14); };
+  const award = i => { if (i >= config.teams.length || awarded.includes(i)) return; setScores(s => s.map((v, n) => n === i ? v + 100 : v)); setAwarded(a => [...a, i]); if (config.sound) playGameShowCue(audioRef, 'correct'); };
+  const registerBuzz = i => { if (buzzed !== null || denied.includes(i) || revealed) return; setBuzzed(i); setRunning(false); if (config.sound) playGameShowCue(audioRef, 'buzz', i); };
   const handleAnswer = choice => {
     if (!question || buzzed === null || revealed || wrongChoices.includes(choice)) return;
     const answeringTeam = buzzed;
@@ -159,15 +246,17 @@ function Quiz({ config, onHome }) {
       setBuzzed(null);
       setRevealed(true);
     }
-    if (config.sound) beep(150, .25);
+    if (config.sound) playGameShowCue(audioRef, 'wrong');
   };
+  const toggleTimer = () => { if (time <= 0) { setTime(config.seconds); setRunning(true); } else setRunning(v => !v); };
   const reset = () => { if (confirm('Reset all scores and return to the lobby?')) onHome(); };
 
   if (finished) {
     const max = Math.max(...scores); const winners = config.teams.filter((_, i) => scores[i] === max);
     return <main className="finale"><p>Final shiokdown complete</p><h1>{winners.join(' & ')}<br/><span>win{winners.length > 1 ? '' : 's'}!</span></h1><div className="final-score">{max} points</div><p>{reactions[max / 100 % reactions.length | 0]} Everyone else: can try again.</p><button className="primary" onClick={onHome}>Play again <Icon name="reset"/></button></main>;
   }
-  if (questionIndex < 0) return <RoundIntro roundIndex={roundIndex} teams={config.teams} onBegin={startRound} onHome={onHome}/>;
+  if (roundIndex === null) return <ThemeBoard completedRounds={completedRounds} teams={config.teams} scores={scores} onPick={chooseRound} onHome={onHome}/>;
+  if (questionIndex < 0) return <RoundIntro roundIndex={roundIndex} completedCount={completedRounds.length} teams={config.teams} onBegin={startRound} onBack={() => setRoundIndex(null)} onHome={onHome}/>;
 
   return <main className="game-shell">
     <section className="game-main">
@@ -186,7 +275,7 @@ function Quiz({ config, onHome }) {
       </section>
     </section>
     <Scoreboard teams={config.teams} reps={reps} scores={scores}/>
-    <footer className="host-controls"><button onClick={() => setRunning(v => !v)}><Icon name={running ? 'pause' : 'play'}/>{running ? 'Pause' : time === config.seconds ? 'Start timer' : 'Resume'}</button><button onClick={reveal} disabled={revealed}><Icon name="eye"/>Reveal answer</button><button onClick={next}>{questionIndex === 19 ? (roundIndex === 7 ? 'Finish' : 'Next round') : 'Next'}<Icon name="next"/></button><button className="reset-button" onClick={reset} aria-label="Reset game"><Icon name="reset"/></button></footer>
+    <footer className="host-controls"><button onClick={toggleTimer}><Icon name={running ? 'pause' : 'play'}/>{running ? 'Pause countdown' : time <= 0 ? `Restart ${config.seconds}s` : 'Resume countdown'}</button><button onClick={reveal} disabled={revealed}><Icon name="eye"/>Reveal answer</button><button onClick={next}>{questionIndex === 19 ? (completedRounds.length === rounds.length - 1 ? 'Finish game' : 'Choose next theme') : 'Next'}<Icon name="next"/></button><button className="reset-button" onClick={reset} aria-label="Reset game"><Icon name="reset"/></button></footer>
   </main>;
 }
 
