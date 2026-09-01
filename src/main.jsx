@@ -1,12 +1,41 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { rounds } from './questions.js';
+import { performanceCategories, rounds } from './questions.js';
 import './styles.css';
 
 const DEFAULT_TEAMS = ['Kopi', 'Tea'];
 const THEME_SECONDS = 30;
 const TOTAL_QUESTIONS = rounds.reduce((total, round) => total + round.questions.length, 0);
+const PERFORMANCE_STORAGE_KEY = 'can-or-cannot-performance-v1';
+const PERFORMANCE_SCHEMA_VERSION = 1;
+const MAX_SAVED_ATTEMPTS = 1000;
 const reactions = ['Steady lah.', 'Can. Definitely can.', 'Wah, knowledge power.', 'Shiok answer.', 'No blur already.'];
+
+function loadSavedAttempts() {
+  if (typeof window === 'undefined') return [];
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(PERFORMANCE_STORAGE_KEY));
+    if (saved?.version !== PERFORMANCE_SCHEMA_VERSION || !Array.isArray(saved.attempts)) return [];
+    const validCategories = new Set(performanceCategories.map(category => category.id));
+    return saved.attempts
+      .filter(attempt => validCategories.has(attempt.category) && typeof attempt.correct === 'boolean' && typeof attempt.team === 'string')
+      .slice(-MAX_SAVED_ATTEMPTS);
+  } catch {
+    return [];
+  }
+}
+
+function accuracy(correct, total) {
+  return total ? Math.round((correct / total) * 100) : 0;
+}
+
+function performanceLabel(correct, total) {
+  if (!total) return 'No data yet';
+  const percent = accuracy(correct, total);
+  if (percent >= 80) return 'Strong';
+  if (percent >= 50) return 'Developing';
+  return 'Review this';
+}
 
 function audioContextFor(ref) {
   const Ctx = window.AudioContext || window.webkitAudioContext;
@@ -87,7 +116,74 @@ function Icon({ name }) {
   return null;
 }
 
-function Welcome({ onStart }) {
+function PerformanceDashboard({ attempts, onClose, onClear }) {
+  const report = useMemo(() => {
+    const categories = performanceCategories.map(category => {
+      const categoryAttempts = attempts.filter(attempt => attempt.category === category.id);
+      const correct = categoryAttempts.filter(attempt => attempt.correct).length;
+      return { ...category, attempts: categoryAttempts.length, correct };
+    });
+    const teamNames = [...new Set(attempts.map(attempt => attempt.team))];
+    const teams = teamNames.map(team => {
+      const teamAttempts = attempts.filter(attempt => attempt.team === team);
+      const correct = teamAttempts.filter(attempt => attempt.correct).length;
+      return { team, attempts: teamAttempts.length, correct };
+    });
+    const correct = attempts.filter(attempt => attempt.correct).length;
+    const steals = attempts.filter(attempt => attempt.stage === 'steal');
+    return {
+      categories,
+      teams,
+      correct,
+      stealWins: steals.filter(attempt => attempt.correct).length,
+      steals: steals.length,
+      lastUpdated: attempts.at(-1)?.answeredAt
+    };
+  }, [attempts]);
+
+  const total = attempts.length;
+  return <div className="performance-overlay" role="dialog" aria-modal="true" aria-labelledby="performance-title">
+    <section className="performance-sheet">
+      <header className="performance-head">
+        <div><p>Host settings · teacher view</p><h2 id="performance-title">Class performance</h2></div>
+        <button onClick={onClose} aria-label="Close class performance">×</button>
+      </header>
+      <div className="performance-scroll">
+        <p className="performance-intro">See where the group is strong and what may need another round. Results are saved on this browser until you clear them.</p>
+        {!total ? <div className="performance-empty"><strong>No answers recorded yet.</strong><span>Start a game and enter a team’s A, B, C or D answer. This dashboard will update immediately.</span></div> : <>
+          <section className="performance-summary" aria-label="Performance summary">
+            <div><span>Answer attempts</span><strong>{total}</strong></div>
+            <div><span>Correct</span><strong>{report.correct}</strong></div>
+            <div><span>Overall accuracy</span><strong>{accuracy(report.correct, total)}%</strong></div>
+            <div><span>Successful steals</span><strong>{report.stealWins}<small> / {report.steals}</small></strong></div>
+          </section>
+          <section className="performance-section">
+            <div className="performance-section-head"><div><p>Learning areas</p><h3>Strengths and gaps</h3></div><div className="performance-key"><span><i className="key-correct"/>Correct</span><span><i className="key-wrong"/>Incorrect</span></div></div>
+            <div className="category-results">{report.categories.map(category => {
+              const percent = accuracy(category.correct, category.attempts);
+              return <article className={`category-result ${category.attempts ? '' : 'no-data'}`} key={category.id}>
+                <div className="category-result-label"><strong>{category.label}</strong><span>{performanceLabel(category.correct, category.attempts)}</span></div>
+                <div className="performance-bar" style={{ '--correct': `${percent}%` }} aria-label={category.attempts ? `${category.label}: ${percent}% correct` : `${category.label}: no data`}><span/></div>
+                <div className="category-result-score"><strong>{category.attempts ? `${percent}%` : '—'}</strong><span>{category.attempts ? `${category.correct} of ${category.attempts}` : '0 attempts'}</span></div>
+              </article>;
+            })}</div>
+          </section>
+          {!!report.teams.length && <section className="performance-section">
+            <div className="performance-section-head"><div><p>Team comparison</p><h3>Who knew what?</h3></div></div>
+            <div className="team-performance">{report.teams.map(team => <div key={team.team}><span>{team.team}</span><strong>{accuracy(team.correct, team.attempts)}%</strong><small>{team.correct} correct · {team.attempts} attempts</small></div>)}</div>
+          </section>}
+        </>}
+        <p className="performance-method">Every submitted A–D answer counts as one attempt. A steal is a second attempt; reveals and skipped questions are not counted.{report.lastUpdated ? ` Last updated ${new Date(report.lastUpdated).toLocaleString()}.` : ''}</p>
+      </div>
+      <footer className="performance-actions">
+        <button className="clear-performance" onClick={onClear} disabled={!total}><Icon name="reset"/>Start new group · clear results</button>
+        <button className="primary" onClick={onClose}>Done</button>
+      </footer>
+    </section>
+  </div>;
+}
+
+function Welcome({ onStart, onOpenPerformance, attemptCount }) {
   const seconds = THEME_SECONDS;
   const [sound, setSound] = useState(true);
   const [teams, setTeams] = useState(DEFAULT_TEAMS);
@@ -121,6 +217,7 @@ function Welcome({ onStart }) {
         <p className="setup-explainer">Two representatives face off. Let the players choose a theme, then you tap it. Read the question; the first player to yell their team name earns the first answer.</p>
         <div className="team-inputs">{teams.map((team, i) => <div className="team-setup" key={i}><label>Team {i + 1}<input value={team} onChange={e => updateTeam(i, e.target.value)} maxLength={22}/></label></div>)}</div>
         <div className="sound-preview"><strong>Game-show sound check</strong><button onClick={() => playGameShowCue(previewAudioRef, 'correct')}>▶ Correct fanfare</button><button onClick={() => playGameShowCue(previewAudioRef, 'wrong')}>▶ Wrong buzzer</button></div>
+        <div className="performance-setting"><div><strong>Class performance</strong><span>{attemptCount ? `${attemptCount} saved answer attempt${attemptCount === 1 ? '' : 's'}` : 'No saved answers yet'}</span></div><button onClick={onOpenPerformance}>View report →</button></div>
         <p className="host-note">Each theme has one 30-second countdown. It starts automatically, pauses on a buzz and resumes with the next question. A wrong answer automatically gives the other team one steal for the same 100 points—no second buzz required. Host keys: 1 / 2 register the first team · A / B / C / D enter their answer · Space pauses · R reveals · → next.</p>
         <button className="primary full" onClick={() => setSetup(false)}>Ready, can!</button>
       </div>
@@ -128,18 +225,18 @@ function Welcome({ onStart }) {
   </main>;
 }
 
-function ThemeBoard({ completedRounds, teams, scores, onPick, onHome }) {
+function ThemeBoard({ completedRounds, teams, scores, onPick, onHome, onOpenPerformance, attemptCount }) {
   return <main className="theme-board">
     <header className="theme-board-head"><div><p>Host-controlled category board</p><h1>Pick a theme</h1><span>Ask the players what they want. You tap their choice.</span></div><div className="theme-score">{teams.map((team, i) => <div key={team + i}><span>{team}</span><strong>{scores[i]}</strong></div>)}</div></header>
     <section className="theme-grid" aria-label="Available themes">{rounds.map((round, i) => {
       const completed = completedRounds.includes(i);
       return <button key={round.title} disabled={completed} onClick={() => onPick(i)} className={completed ? 'theme-card completed' : 'theme-card'}><small>Theme {String(i + 1).padStart(2, '0')}</small><strong>{round.title}</strong><span>{completed ? 'Played ✓' : '20 questions →'}</span></button>;
     })}</section>
-    <footer className="theme-board-foot"><span>{completedRounds.length} of {rounds.length} themes played</span><button className="text-button" onClick={onHome}>Back to lobby</button></footer>
+    <footer className="theme-board-foot"><span>{completedRounds.length} of {rounds.length} themes played</span><div><button className="text-button" onClick={onOpenPerformance}>Class performance · {attemptCount}</button><button className="text-button" onClick={onHome}>Back to lobby</button></div></footer>
   </main>;
 }
 
-function RoundIntro({ roundIndex, completedCount, teams, onBegin, onBack, onHome }) {
+function RoundIntro({ roundIndex, completedCount, teams, onBegin, onBack, onHome, onOpenPerformance }) {
   const r = rounds[roundIndex];
   const [reps, setReps] = useState(['Representative 1', 'Representative 2']);
   return <main className="round-intro">
@@ -152,6 +249,7 @@ function RoundIntro({ roundIndex, completedCount, teams, onBegin, onBack, onHome
       <div className="rep-call"><strong>Send up one representative per team</strong>{teams.map((team,i) => <label key={team}>{team}<input value={reps[i]} onChange={e => setReps(v => v.map((x,n) => n === i ? e.target.value : x))}/></label>)}</div>
       <button className="primary" onClick={() => onBegin(reps)}>Start round <Icon name="play"/></button>
       <button className="text-button" onClick={onBack}>Pick another theme</button>
+      <button className="text-button" onClick={onOpenPerformance}>Class performance</button>
       <button className="text-button" onClick={onHome}>Back to lobby</button>
     </div>
   </main>;
@@ -165,13 +263,13 @@ function Timer({ time, total, running }) {
   </div>;
 }
 
-function Scoreboard({ teams, reps, scores }) {
+function Scoreboard({ teams, reps, scores, onOpenPerformance, attemptCount }) {
   return <aside className="scoreboard"><div className="score-title">Score</div>{teams.map((team, i) => <div className="score-team" key={team + i}>
     <span>{team}</span><em>{reps[i]} · yell “{team.toUpperCase()}”</em><strong>{scores[i]}</strong>
-  </div>)}</aside>;
+  </div>)}<button className="performance-link" onClick={onOpenPerformance}><span>Class performance</span><strong>{attemptCount}</strong><small>saved attempts →</small></button></aside>;
 }
 
-function Quiz({ config, onHome }) {
+function Quiz({ config, onHome, onRecordAttempt, onOpenPerformance, attemptCount }) {
   const [roundIndex, setRoundIndex] = useState(null);
   const [questionIndex, setQuestionIndex] = useState(-1);
   const [time, setTime] = useState(config.seconds);
@@ -231,9 +329,18 @@ function Quiz({ config, onHome }) {
   const handleAnswer = choice => {
     if (!question || buzzed === null || revealed || wrongChoices.includes(choice)) return;
     const answeringTeam = buzzed;
+    const isCorrect = choice === question.answer;
+    onRecordAttempt({
+      category: question.category,
+      topic: question.topic,
+      team: config.teams[answeringTeam],
+      correct: isCorrect,
+      stage: denied.length ? 'steal' : 'initial',
+      answeredAt: new Date().toISOString()
+    });
     setSelected(choice);
     setRunning(false);
-    if (choice === question.answer) {
+    if (isCorrect) {
       award(answeringTeam);
       setRevealed(true);
       return;
@@ -255,10 +362,10 @@ function Quiz({ config, onHome }) {
 
   if (finished) {
     const max = Math.max(...scores); const winners = config.teams.filter((_, i) => scores[i] === max);
-    return <main className="finale"><p>Final shiokdown complete</p><h1>{winners.join(' & ')}<br/><span>win{winners.length > 1 ? '' : 's'}!</span></h1><div className="final-score">{max} points</div><p>{reactions[max / 100 % reactions.length | 0]} Everyone else: can try again.</p><button className="primary" onClick={onHome}>Play again <Icon name="reset"/></button></main>;
+    return <main className="finale"><p>Final shiokdown complete</p><h1>{winners.join(' & ')}<br/><span>win{winners.length > 1 ? '' : 's'}!</span></h1><div className="final-score">{max} points</div><p>{reactions[max / 100 % reactions.length | 0]} Everyone else: can try again.</p><div><button className="primary" onClick={onHome}>Play again <Icon name="reset"/></button><button className="secondary" onClick={onOpenPerformance}>View class performance</button></div></main>;
   }
-  if (roundIndex === null) return <ThemeBoard completedRounds={completedRounds} teams={config.teams} scores={scores} onPick={chooseRound} onHome={onHome}/>;
-  if (questionIndex < 0) return <RoundIntro roundIndex={roundIndex} completedCount={completedRounds.length} teams={config.teams} onBegin={startRound} onBack={() => setRoundIndex(null)} onHome={onHome}/>;
+  if (roundIndex === null) return <ThemeBoard completedRounds={completedRounds} teams={config.teams} scores={scores} onPick={chooseRound} onHome={onHome} onOpenPerformance={onOpenPerformance} attemptCount={attemptCount}/>;
+  if (questionIndex < 0) return <RoundIntro roundIndex={roundIndex} completedCount={completedRounds.length} teams={config.teams} onBegin={startRound} onBack={() => setRoundIndex(null)} onHome={onHome} onOpenPerformance={onOpenPerformance}/>;
 
   return <main className="game-shell">
     <section className="game-main">
@@ -276,14 +383,37 @@ function Quiz({ config, onHome }) {
         {revealed && <div className="reveal"><strong>{String.fromCharCode(65 + question.answer)} · {question.options[question.answer]}</strong><p>{question.explain}</p><a href={question.source} target="_blank" rel="noreferrer">Check the source ↗</a></div>}
       </section>
     </section>
-    <Scoreboard teams={config.teams} reps={reps} scores={scores}/>
+    <Scoreboard teams={config.teams} reps={reps} scores={scores} onOpenPerformance={onOpenPerformance} attemptCount={attemptCount}/>
     <footer className="host-controls"><button onClick={toggleTimer}><Icon name={running ? 'pause' : 'play'}/>{running ? 'Pause countdown' : time <= 0 ? `Restart ${config.seconds}s theme` : 'Resume countdown'}</button><button onClick={reveal} disabled={revealed || time <= 0}><Icon name="eye"/>Reveal answer</button><button onClick={next}>{time <= 0 ? (completedRounds.length === rounds.length - 1 ? 'Finish game' : 'End theme') : questionIndex === rounds[roundIndex].questions.length - 1 ? (completedRounds.length === rounds.length - 1 ? 'Finish game' : 'Choose next theme') : 'Next'}<Icon name="next"/></button><button className="reset-button" onClick={reset} aria-label="Reset game"><Icon name="reset"/></button></footer>
   </main>;
 }
 
 function App() {
   const [config, setConfig] = useState(null);
-  return config ? <Quiz config={config} onHome={() => setConfig(null)}/> : <Welcome onStart={setConfig}/>;
+  const [attempts, setAttempts] = useState(loadSavedAttempts);
+  const [performanceOpen, setPerformanceOpen] = useState(false);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(PERFORMANCE_STORAGE_KEY, JSON.stringify({ version: PERFORMANCE_SCHEMA_VERSION, attempts }));
+    } catch {}
+  }, [attempts]);
+
+  const recordAttempt = useCallback(attempt => {
+    setAttempts(current => [...current, attempt].slice(-MAX_SAVED_ATTEMPTS));
+  }, []);
+
+  const clearPerformance = useCallback(() => {
+    if (!window.confirm('Clear all saved class performance results? This cannot be undone.')) return;
+    setAttempts([]);
+  }, []);
+
+  return <>
+    {config
+      ? <Quiz config={config} onHome={() => setConfig(null)} onRecordAttempt={recordAttempt} onOpenPerformance={() => setPerformanceOpen(true)} attemptCount={attempts.length}/>
+      : <Welcome onStart={setConfig} onOpenPerformance={() => setPerformanceOpen(true)} attemptCount={attempts.length}/>}
+    {performanceOpen && <PerformanceDashboard attempts={attempts} onClose={() => setPerformanceOpen(false)} onClear={clearPerformance}/>}
+  </>;
 }
 
 createRoot(document.getElementById('root')).render(<React.StrictMode><App/></React.StrictMode>);

@@ -16,6 +16,8 @@ A host-led Singapore trivia game for two teams, built for a live hawker-food ses
 - Each theme has one 30-second countdown. It starts automatically, pauses on a buzz, and resumes on the next question without resetting.
 - Built-in game-show cues distinguish buzz-ins, correct answers, wrong answers and time-outs.
 - Each question includes a short explanation and a source link.
+- Host settings includes a teacher-facing class performance report across eight learning areas, with team comparisons and steal statistics.
+- Performance results persist in the same browser until the host selects **Start new group · clear results**.
 
 ## Host controls
 
@@ -50,6 +52,7 @@ Questions are stored in [`src/questions.js`](src/questions.js). Every question r
 - a unique topic ID so paraphrased duplicates cannot slip back in;
 - four answer options;
 - one answer index from 0 to 3;
+- one teacher-facing performance category;
 - a concise explanation; and
 - a reliable source URL.
 

@@ -1,8 +1,10 @@
-import { rounds } from '../src/questions.js';
+import { performanceCategories, rounds } from '../src/questions.js';
 
 const errors = [];
 const seenQuestions = new Set();
 const seenTopics = new Set();
+const categoryIds = new Set(performanceCategories.map(category => category.id));
+const usedCategories = new Set();
 
 if (rounds.length !== 5) errors.push(`Expected 5 themes; found ${rounds.length}.`);
 
@@ -27,10 +29,16 @@ rounds.forEach((round, roundIndex) => {
     }
     if (!question.explain?.trim()) errors.push(`${location} has no explanation.`);
     if (!/^https?:\/\//.test(question.source || '')) errors.push(`${location} has no valid source URL.`);
+    if (!categoryIds.has(question.category)) errors.push(`${location} has an invalid performance category "${question.category}".`);
     if (seenQuestions.has(key)) errors.push(`${location} duplicates another question.`);
     if (topic) seenTopics.add(topic);
+    if (categoryIds.has(question.category)) usedCategories.add(question.category);
     seenQuestions.add(key);
   });
+});
+
+performanceCategories.forEach(category => {
+  if (!usedCategories.has(category.id)) errors.push(`Performance category "${category.label}" has no questions.`);
 });
 
 if (errors.length) {
@@ -38,4 +46,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log(`Validated ${rounds.length} themes, ${seenQuestions.size} sourced questions and ${seenTopics.size} unique topics.`);
+console.log(`Validated ${rounds.length} themes, ${seenQuestions.size} sourced questions, ${seenTopics.size} unique topics and ${usedCategories.size} performance categories.`);

@@ -77,16 +77,39 @@ const SRC = {
   changiPow: 'https://www.awm.gov.au/collection/C2695038'
 };
 
-const q = (topic, question, options, answer, explain, source) => ({ topic, q: question, options, answer, explain, source });
+export const performanceCategories = [
+  { id: 'food', label: 'Food & hawker culture' },
+  { id: 'language', label: 'Language & Singlish' },
+  { id: 'history', label: 'History & heritage' },
+  { id: 'sport', label: 'Sport' },
+  { id: 'screen-stage', label: 'Film, TV & theatre' },
+  { id: 'arts', label: 'Music, books & art' },
+  { id: 'innovation', label: 'Innovation & design' },
+  { id: 'australia', label: 'Singapore–Australia' }
+];
+
+const CATEGORY = {
+  FOOD: 'food',
+  LANGUAGE: 'language',
+  HISTORY: 'history',
+  SPORT: 'sport',
+  SCREEN_STAGE: 'screen-stage',
+  ARTS: 'arts',
+  INNOVATION: 'innovation',
+  AUSTRALIA: 'australia'
+};
+
+const q = (topic, question, options, answer, explain, source, category = null) => ({ topic, q: question, options, answer, explain, source, category });
 
 export const rounds = [
   {
     title: 'Hawker food files',
     description: 'One food round only: hawker basics, dish clues and ingredient mysteries—with no second serving of the same topic.',
+    category: CATEGORY.FOOD,
     questions: [
-      q('hawker-unesco-year', 'Singapore’s hawker culture joined UNESCO’s intangible heritage list in which year?', ['2015', '2018', '2020', '2023'], 2, 'UNESCO inscribed Hawker Culture in Singapore in 2020. A very official reason to say “makan”.', SRC.hawkerUnesco),
-      q('hawker-resettlement', 'Why were many purpose-built hawker centres created from the 1970s?', ['To resettle street hawkers', 'To replace hotels', 'To host cooking contests', 'To serve only tourists'], 0, 'The centres helped resettle itinerant street hawkers while improving sanitation and infrastructure.', SRC.hawkerRoots),
-      q('hawker-centre-format', 'A hawker centre is best described as…', ['One giant restaurant', 'A supermarket tasting room', 'A hotel buffet', 'Independent food stalls with shared seating'], 3, 'Many independent cooked-food and drink stalls share one public dining space. One table, twenty temptations.', SRC.hawkerRoots),
+      q('hawker-unesco-year', 'Singapore’s hawker culture joined UNESCO’s intangible heritage list in which year?', ['2015', '2018', '2020', '2023'], 2, 'UNESCO inscribed Hawker Culture in Singapore in 2020. A very official reason to say “makan”.', SRC.hawkerUnesco, CATEGORY.HISTORY),
+      q('hawker-resettlement', 'Why were many purpose-built hawker centres created from the 1970s?', ['To resettle street hawkers', 'To replace hotels', 'To host cooking contests', 'To serve only tourists'], 0, 'The centres helped resettle itinerant street hawkers while improving sanitation and infrastructure.', SRC.hawkerRoots, CATEGORY.HISTORY),
+      q('hawker-centre-format', 'A hawker centre is best described as…', ['One giant restaurant', 'A supermarket tasting room', 'A hotel buffet', 'Independent food stalls with shared seating'], 3, 'Many independent cooked-food and drink stalls share one public dining space. One table, twenty temptations.', SRC.hawkerRoots, CATEGORY.HISTORY),
       q('kopi-o-kosong', 'What does “kopi O kosong” order?', ['Coffee with evaporated milk', 'Black coffee without sugar', 'Iced coffee with milk', 'Tea without sugar'], 1, 'O removes milk; kosong removes sugar. Beverage algebra, Singapore edition.', SRC.food),
       q('teh-tarik', 'What makes teh tarik “tarik”?', ['It is pulled between vessels', 'It contains lime', 'It is frozen', 'It comes with a straw'], 0, 'Tarik means pulled: the tea is poured repeatedly between vessels to cool and aerate it.', SRC.food),
       q('chicken-rice', 'What makes the rice in Hainanese chicken rice so fragrant?', ['Coconut cream only', 'Tomato stock', 'Chicken stock, fat and aromatics', 'Rose syrup'], 2, 'The rice is cooked with chicken stock, fat and aromatics. It is absolutely not a side character.', SRC.cuisine),
@@ -109,6 +132,7 @@ export const rounds = [
   {
     title: 'Singlish, can?',
     description: 'Twenty different expressions. Translate the mood, not just the words, and don’t anyhow answer.',
+    category: CATEGORY.LANGUAGE,
     questions: [
       q('singlish-definition', 'Singlish is best described as…', ['A spelling reform', 'English spoken only by tourists', 'Informal colloquial Singapore English', 'Singapore’s national language'], 2, 'Singlish is a systematic colloquial variety shaped by Singapore’s multilingual environment.', SRC.singlish),
       q('singlish-lah', 'What does “lah” usually add to a sentence?', ['Past tense', 'A person’s name', 'The meaning “lunch”', 'Emphasis or social tone'], 3, 'Lah is a discourse particle whose effect depends on tone and context. Tiny word, big workload.', SRC.singlish),
@@ -135,6 +159,7 @@ export const rounds = [
   {
     title: 'Singapore sporting legends',
     description: 'Athletes, unlikely world firsts and the Kallang Roar—twenty ways the Little Red Dot plays big.',
+    category: CATEGORY.SPORT,
     questions: [
       q('schooling-olympic-gold', 'Joseph Schooling won Singapore’s first Olympic gold in which event?', ['200m freestyle', '50m breaststroke', '100m butterfly', '400m medley'], 2, 'Schooling won the 100m butterfly at Rio 2016. For 50.39 seconds, Singapore collectively forgot to breathe.', SRC.schooling),
       q('tan-howe-liang-first-medal', 'Singapore’s first Olympic medal came from Tan Howe Liang in which sport?', ['Weightlifting', 'Boxing', 'Badminton', 'Diving'], 0, 'Tan lifted through pain to win silver at Rome 1960—the nation’s first Olympic medal.', SRC.tanHoweLiang),
@@ -161,6 +186,7 @@ export const rounds = [
   {
     title: 'Singapore on the world stage',
     description: 'Actors, filmmakers, musicians, writers and cultural exports. Yes, Batman is in this round.',
+    category: CATEGORY.SCREEN_STAGE,
     questions: [
       q('chin-han-dark-knight', 'Which Singaporean actor played Lau in The Dark Knight?', ['Pierre Png', 'Chin Han', 'Adrian Pang', 'Hossan Leong'], 1, 'Ng Chin Han played Gotham businessman Lau in Christopher Nolan’s 2008 Batman film.', SRC.chinHan),
       q('fann-wong-shanghai-knights', 'Fann Wong made her Hollywood debut in which Jackie Chan sequel?', ['Rush Hour 2', 'The Tuxedo', 'Around the World in 80 Days', 'Shanghai Knights'], 3, 'Fann Wong played Chon Lin in the 2003 action-comedy Shanghai Knights.', SRC.fannWong),
@@ -171,22 +197,23 @@ export const rounds = [
       q('kirsten-tan-pop-aye', 'What animal drives the road trip in Kirsten Tan’s award-winning Pop Aye?', ['Tiger', 'Horse', 'Elephant', 'Crocodile'], 2, 'Pop Aye follows a man taking his long-lost elephant home and won a Sundance screenwriting prize.', SRC.popAye),
       q('eric-khoo-12-storeys', 'Which Eric Khoo film became the first Singapore film in Cannes’ official selection?', ['Be with Me', 'Mee Pok Man', 'My Magic', '12 Storeys'], 3, '12 Storeys was selected for Cannes’ Un Certain Regard section in 1997.', SRC.ericKhoo),
       q('boo-junfeng-apprentice', 'Which Boo Junfeng film premiered in Cannes’ Un Certain Regard section in 2016?', ['Apprentice', 'Sandcastle', 'A Yellow Bird', 'Ilo Ilo'], 0, 'Apprentice, a drama centred on a prison executioner, premiered in Un Certain Regard.', SRC.booJunfeng),
-      q('sonny-liew-eisners', 'How many Eisner Awards did Sonny Liew’s The Art of Charlie Chan Hock Chye win in 2017?', ['One', 'Three', 'Five', 'Seven'], 1, 'It won three: Best Writer/Artist, Best Publication Design and Best U.S. Edition of International Material—Asia.', SRC.sonnyLiew),
-      q('dick-lee-home', 'Who wrote and composed the National Day song “Home”?', ['Jeremy Monteiro', 'Ken Lim', 'Dick Lee', 'JJ Lin'], 2, 'Dick Lee wrote “Home”, first used as the National Day Parade theme song in 1998.', SRC.nationalSongs),
-      q('stefanie-sun-yanzi', 'Which Singaporean Mandopop star is also known as Sun Yanzi?', ['Stefanie Sun', 'Tanya Chua', 'Kit Chan', 'Olivia Ong'], 0, 'Stefanie Sun became a major Mandopop star after her 2000 debut and is widely known as Sun Yanzi.', SRC.stefanieSun),
-      q('taufik-singapore-idol', 'Who won the first Singapore Idol in 2004?', ['Hady Mirza', 'Sylvester Sim', 'Sezairi Sezali', 'Taufik Batisah'], 3, 'Taufik Batisah won the inaugural Singapore Idol and built a regional music career from there.', SRC.taufik),
-      q('tanya-golden-melody', 'Which singer became the first person to win Taiwan’s Best Mandarin Female Singer award four times?', ['Stefanie Sun', 'Tanya Chua', 'Kit Chan', 'Corrinne May'], 1, 'Singaporean singer-songwriter Tanya Chua achieved the four-win Golden Melody record.', SRC.tanya),
-      q('shabir-vasantham-star', 'Which artist won the inaugural Vasantham Star in 2005?', ['Shabir Sulthan', 'Taufik Batisah', 'Hady Mirza', 'Nathan Hartono'], 0, 'Shabir Sulthan won the first Vasantham Star and later became an international Tamil composer and performer.', SRC.shabir),
-      q('amanda-ministry-moral-panic', 'Amanda Lee Koe became the youngest Singapore Literature Prize winner with which collection?', ['Ponti', 'State of Emergency', 'Ministry of Moral Panic', 'The Gatekeeper'], 2, 'Her short-story collection Ministry of Moral Panic won the prize in 2014.', SRC.amanda),
+      q('sonny-liew-eisners', 'How many Eisner Awards did Sonny Liew’s The Art of Charlie Chan Hock Chye win in 2017?', ['One', 'Three', 'Five', 'Seven'], 1, 'It won three: Best Writer/Artist, Best Publication Design and Best U.S. Edition of International Material—Asia.', SRC.sonnyLiew, CATEGORY.ARTS),
+      q('dick-lee-home', 'Who wrote and composed the National Day song “Home”?', ['Jeremy Monteiro', 'Ken Lim', 'Dick Lee', 'JJ Lin'], 2, 'Dick Lee wrote “Home”, first used as the National Day Parade theme song in 1998.', SRC.nationalSongs, CATEGORY.ARTS),
+      q('stefanie-sun-yanzi', 'Which Singaporean Mandopop star is also known as Sun Yanzi?', ['Stefanie Sun', 'Tanya Chua', 'Kit Chan', 'Olivia Ong'], 0, 'Stefanie Sun became a major Mandopop star after her 2000 debut and is widely known as Sun Yanzi.', SRC.stefanieSun, CATEGORY.ARTS),
+      q('taufik-singapore-idol', 'Who won the first Singapore Idol in 2004?', ['Hady Mirza', 'Sylvester Sim', 'Sezairi Sezali', 'Taufik Batisah'], 3, 'Taufik Batisah won the inaugural Singapore Idol and built a regional music career from there.', SRC.taufik, CATEGORY.ARTS),
+      q('tanya-golden-melody', 'Which singer became the first person to win Taiwan’s Best Mandarin Female Singer award four times?', ['Stefanie Sun', 'Tanya Chua', 'Kit Chan', 'Corrinne May'], 1, 'Singaporean singer-songwriter Tanya Chua achieved the four-win Golden Melody record.', SRC.tanya, CATEGORY.ARTS),
+      q('shabir-vasantham-star', 'Which artist won the inaugural Vasantham Star in 2005?', ['Shabir Sulthan', 'Taufik Batisah', 'Hady Mirza', 'Nathan Hartono'], 0, 'Shabir Sulthan won the first Vasantham Star and later became an international Tamil composer and performer.', SRC.shabir, CATEGORY.ARTS),
+      q('amanda-ministry-moral-panic', 'Amanda Lee Koe became the youngest Singapore Literature Prize winner with which collection?', ['Ponti', 'State of Emergency', 'Ministry of Moral Panic', 'The Gatekeeper'], 2, 'Her short-story collection Ministry of Moral Panic won the prize in 2014.', SRC.amanda, CATEGORY.ARTS),
       q('haresh-off-centre', 'Which playwright wrote the landmark Singapore play Off Centre?', ['Alfian Sa’at', 'Haresh Sharma', 'Michael Chiang', 'Ovidia Yu'], 1, 'Haresh Sharma, resident playwright of The Necessary Stage, wrote Off Centre.', SRC.haresh),
       q('ivan-wild-rice', 'Ivan Heng founded which Singapore theatre company?', ['The Necessary Stage', 'TheatreWorks', 'Singapore Repertory Theatre', 'Wild Rice'], 3, 'Ivan Heng founded Wild Rice in 2000 and serves as its founding artistic director.', SRC.ivan),
-      q('jj-lin-music-voyager', 'What was JJ Lin’s 2003 debut album?', ['Music Voyager', 'Cao Cao', 'Stories Untold', 'Message in a Bottle'], 0, 'Singaporean Mandopop singer JJ Lin debuted with Music Voyager in 2003.', SRC.jjLin),
+      q('jj-lin-music-voyager', 'What was JJ Lin’s 2003 debut album?', ['Music Voyager', 'Cao Cao', 'Stories Untold', 'Message in a Bottle'], 0, 'Singaporean Mandopop singer JJ Lin debuted with Music Voyager in 2003.', SRC.jjLin, CATEGORY.ARTS),
       q('phua-chu-kang-yellow-boots', 'Which Singapore TV character was a contractor with permed hair and trademark yellow boots?', ['Tan Ah Teck', 'Phua Chu Kang', 'Under One Roof’s Paul', 'VR Man'], 1, 'Gurmit Singh’s Singlish-speaking Phua Chu Kang starred in Singapore’s longest-running English-language sitcom. Don’t play-play.', SRC.phuaChuKang)
     ]
   },
   {
     title: 'Made here & Down Under',
     description: 'Singapore originals meet surprising Australia links. Canberra is closer than the departure board suggests.',
+    category: CATEGORY.INNOVATION,
     questions: [
       q('sound-blaster', 'Which Singapore-made product became a global PC-audio standard after its 1989 launch?', ['PalmPilot', 'Walkman', 'Sound Blaster', 'Game Boy'], 2, 'Creative Technology launched the Sound Blaster card at COMDEX in Las Vegas in 1989.', SRC.soundBlaster),
       q('thumbdrive', 'Which Singapore company introduced the ThumbDrive USB storage device?', ['Trek 2000', 'Creative Technology', 'Razer', 'Sea Group'], 0, 'Singapore company Trek 2000 created and launched the thumb-sized USB storage product.', SRC.thumbDrive),
@@ -194,23 +221,29 @@ export const rounds = [
       q('erp', 'Singapore’s Electronic Road Pricing system is designed mainly to manage…', ['Rainfall', 'Airport queues', 'Housing prices', 'Road congestion'], 3, 'ERP was introduced in 1998 to manage traffic congestion through road pricing.', SRC.erp),
       q('singapore-sling', 'Who is credited with creating the Singapore Sling at Raffles Hotel?', ['Ngiam Tong Boon', 'Tan Tock Seng', 'Lim Bo Seng', 'William Farquhar'], 0, 'Raffles bartender Ngiam Tong Boon is credited with perfecting the pink gin cocktail around 1915.', SRC.sling),
       q('night-safari', 'What world-first claim belongs to Singapore’s Night Safari?', ['First zoo in an airport', 'First underwater zoo', 'First nocturnal wildlife park', 'First zoo without mammals'], 2, 'Opened in 1994, Night Safari is recognised as the world’s first nocturnal wildlife park.', SRC.nightSafari),
-      q('australia-csp-2015', 'Singapore and Australia established their Comprehensive Strategic Partnership in which year?', ['2005', '2010', '2015', '2020'], 2, 'The two countries established the partnership in 2015, their 50th year of diplomatic relations.', SRC.australiaCsp),
+      q('australia-csp-2015', 'Singapore and Australia established their Comprehensive Strategic Partnership in which year?', ['2005', '2010', '2015', '2020'], 2, 'The two countries established the partnership in 2015, their 50th year of diplomatic relations.', SRC.australiaCsp, CATEGORY.AUSTRALIA),
       q('airport-butterfly-garden', 'Which world-first can travellers find inside Changi Airport?', ['Airport butterfly garden', 'Airport ski slope', 'Airport coral reef', 'Airport vineyard'], 0, 'Terminal 3 houses the world’s first butterfly garden in an airport, with more than 1,000 butterflies.', SRC.butterfly),
       q('sky-greens', 'Singapore’s Sky Greens pioneered a low-carbon vertical farm driven by what?', ['Coal-fired belts', 'Jet engines', 'Geothermal steam', 'Hydraulic water-pulley systems'], 3, 'Its vertical growing towers rotate using a low-energy hydraulic water-pulley system.', SRC.skyGreens),
       q('rain-vortex', 'How tall is Jewel Changi’s world-record indoor Rain Vortex?', ['20 metres', '30 metres', '40 metres', '60 metres'], 2, 'The Rain Vortex falls 40 metres through Jewel—seven storeys of extremely committed water.', SRC.rainVortex),
-      q('australia-recognition', 'Australia was which country to recognise independent Singapore in 1965?', ['First', 'Second', 'Fifth', 'Tenth'], 1, 'Australia was the second country to recognise Singapore after independence.', SRC.australiaBrief),
-      q('safta', 'The Singapore–Australia Free Trade Agreement was originally signed in…', ['2003', '1991', '2015', '2022'], 0, 'SAFTA was originally signed in 2003 and has since been updated several times.', SRC.australiaBrief),
-      q('digital-economy-agreement', 'Australia was Singapore’s first bilateral partner for what kind of agreement?', ['Space-launch agreement', 'Fisheries-only pact', 'Digital Economy Agreement', 'Common currency treaty'], 2, 'The Singapore–Australia Digital Economy Agreement entered into force in December 2020.', SRC.digitalAgreement),
-      q('green-economy-agreement', 'The 2022 Singapore–Australia Green Economy Agreement combines climate goals with…', ['Military conscription', 'Sporting rules', 'Immigration quotas', 'Trade and economic cooperation'], 3, 'The first-of-its-kind agreement links climate, trade and economic objectives.', SRC.greenAgreement),
-      q('exercise-wallaby', 'Exercise Wallaby has brought Singapore Armed Forces personnel to train in which Australian state since 1990?', ['Queensland', 'Tasmania', 'Victoria', 'Western Australia'], 0, 'Exercise Wallaby began at Shoalwater Bay Training Area in Queensland in 1990.', SRC.wallaby),
-      q('fpda', 'Australia and Singapore belong to the FPDA with which other three countries?', ['India, Japan and Indonesia', 'Malaysia, New Zealand and the UK', 'France, Thailand and Brunei', 'Canada, Fiji and the US'], 1, 'The Five Power Defence Arrangements unite Australia, Malaysia, New Zealand, Singapore and the United Kingdom.', SRC.fpda),
-      q('canberra-mrt', 'Which Singapore MRT station shares its name with Australia’s capital?', ['Darwin', 'Sydney', 'Canberra', 'Hobart'], 2, 'Canberra MRT takes its name from nearby Canberra Link, itself named after Australia’s capital.', SRC.canberra),
-      q('christmas-island', 'In 1958, which territory was transferred from colonial Singapore to Australia?', ['Norfolk Island', 'Cocos Island', 'Sentosa', 'Christmas Island'], 3, 'Sovereignty over Christmas Island was transferred to Australia on 1 October 1958.', SRC.christmasIsland),
-      q('changi-australian-pows', 'After Singapore fell in 1942, where were many captured Australian troops first held?', ['Changi', 'Pulau Ubin', 'Fort Canning', 'Jurong Island'], 0, 'Many members of Australia’s 8th Division were held at Changi before some were sent to forced-labour sites elsewhere.', SRC.changiPow),
-      q('australia-sea-trade-partner', 'Within Southeast Asia, Singapore is Australia’s largest partner for which combined measure?', ['Tourist visas only', 'Two-way trade and investment', 'Wheat production', 'Film co-productions only'], 1, 'Australia’s government identifies Singapore as its largest Southeast Asian partner for two-way trade and investment.', SRC.australiaBrief)
+      q('australia-recognition', 'Australia was which country to recognise independent Singapore in 1965?', ['First', 'Second', 'Fifth', 'Tenth'], 1, 'Australia was the second country to recognise Singapore after independence.', SRC.australiaBrief, CATEGORY.HISTORY),
+      q('safta', 'The Singapore–Australia Free Trade Agreement was originally signed in…', ['2003', '1991', '2015', '2022'], 0, 'SAFTA was originally signed in 2003 and has since been updated several times.', SRC.australiaBrief, CATEGORY.AUSTRALIA),
+      q('digital-economy-agreement', 'Australia was Singapore’s first bilateral partner for what kind of agreement?', ['Space-launch agreement', 'Fisheries-only pact', 'Digital Economy Agreement', 'Common currency treaty'], 2, 'The Singapore–Australia Digital Economy Agreement entered into force in December 2020.', SRC.digitalAgreement, CATEGORY.AUSTRALIA),
+      q('green-economy-agreement', 'The 2022 Singapore–Australia Green Economy Agreement combines climate goals with…', ['Military conscription', 'Sporting rules', 'Immigration quotas', 'Trade and economic cooperation'], 3, 'The first-of-its-kind agreement links climate, trade and economic objectives.', SRC.greenAgreement, CATEGORY.AUSTRALIA),
+      q('exercise-wallaby', 'Exercise Wallaby has brought Singapore Armed Forces personnel to train in which Australian state since 1990?', ['Queensland', 'Tasmania', 'Victoria', 'Western Australia'], 0, 'Exercise Wallaby began at Shoalwater Bay Training Area in Queensland in 1990.', SRC.wallaby, CATEGORY.AUSTRALIA),
+      q('fpda', 'Australia and Singapore belong to the FPDA with which other three countries?', ['India, Japan and Indonesia', 'Malaysia, New Zealand and the UK', 'France, Thailand and Brunei', 'Canada, Fiji and the US'], 1, 'The Five Power Defence Arrangements unite Australia, Malaysia, New Zealand, Singapore and the United Kingdom.', SRC.fpda, CATEGORY.AUSTRALIA),
+      q('canberra-mrt', 'Which Singapore MRT station shares its name with Australia’s capital?', ['Darwin', 'Sydney', 'Canberra', 'Hobart'], 2, 'Canberra MRT takes its name from nearby Canberra Link, itself named after Australia’s capital.', SRC.canberra, CATEGORY.AUSTRALIA),
+      q('christmas-island', 'In 1958, which territory was transferred from colonial Singapore to Australia?', ['Norfolk Island', 'Cocos Island', 'Sentosa', 'Christmas Island'], 3, 'Sovereignty over Christmas Island was transferred to Australia on 1 October 1958.', SRC.christmasIsland, CATEGORY.HISTORY),
+      q('changi-australian-pows', 'After Singapore fell in 1942, where were many captured Australian troops first held?', ['Changi', 'Pulau Ubin', 'Fort Canning', 'Jurong Island'], 0, 'Many members of Australia’s 8th Division were held at Changi before some were sent to forced-labour sites elsewhere.', SRC.changiPow, CATEGORY.HISTORY),
+      q('australia-sea-trade-partner', 'Within Southeast Asia, Singapore is Australia’s largest partner for which combined measure?', ['Tourist visas only', 'Two-way trade and investment', 'Wheat production', 'Film co-productions only'], 1, 'Australia’s government identifies Singapore as its largest Southeast Asian partner for two-way trade and investment.', SRC.australiaBrief, CATEGORY.AUSTRALIA)
     ]
   }
 ];
+
+rounds.forEach(round => {
+  round.questions.forEach(question => {
+    question.category ||= round.category;
+  });
+});
 
 if (rounds.some(round => round.questions.length !== 20)) {
   throw new Error('Every theme must contain exactly 20 questions.');
