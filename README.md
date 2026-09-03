@@ -14,6 +14,7 @@ A host-led Singapore trivia game for two teams, built for a live hawker-food ses
 - A correct answer earns 100 points automatically.
 - A wrong answer automatically hands the other team one attempt to steal the same 100 points; no second buzz is required.
 - Each theme has one 30-second countdown. It starts automatically, pauses on a buzz, and resumes on the next question without resetting.
+- When the theme clock reaches zero, a clear time-up panel lets the host add another 30 seconds or end the theme and choose another.
 - Built-in game-show cues distinguish buzz-ins, correct answers, wrong answers and time-outs.
 - Each question includes a short explanation and a source link.
 - Host settings includes a teacher-facing class performance report across eight learning areas, with team comparisons and steal statistics.

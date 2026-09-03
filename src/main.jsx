@@ -257,9 +257,9 @@ function RoundIntro({ roundIndex, completedCount, teams, onBegin, onBack, onHome
 
 function Timer({ time, total, running }) {
   const progress = Math.max(0, time / total);
-  return <div className={`timer ${time <= 5 ? 'urgent' : ''} ${running ? 'running' : ''}`} style={{'--progress': `${progress * 360}deg`}} aria-label={`${time} seconds remaining`}>
+  return <div className={`timer ${time <= 5 && time > 0 ? 'urgent' : ''} ${running ? 'running' : ''} ${time <= 0 ? 'expired' : ''}`} style={{'--progress': `${progress * 360}deg`}} aria-label={`${time} seconds remaining`}>
     <div>{time}</div>
-    <span>{running ? 'seconds' : 'paused'}</span>
+    <span>{time <= 0 ? 'time’s up' : running ? 'seconds' : 'paused'}</span>
   </div>;
 }
 
@@ -293,9 +293,12 @@ function Quiz({ config, onHome, onRecordAttempt, onOpenPerformance, attemptCount
     return () => clearTimeout(id);
   }, [running, revealed, time]);
   useEffect(() => {
-    if (!config.sound || !running) return;
-    if (time <= 5 && time > 0) playGameShowCue(audioRef, 'tick');
-    if (time === 0) { playGameShowCue(audioRef, 'timeout'); setRunning(false); }
+    if (!running) return;
+    if (config.sound && time <= 5 && time > 0) playGameShowCue(audioRef, 'tick');
+    if (time === 0) {
+      setRunning(false);
+      if (config.sound) playGameShowCue(audioRef, 'timeout');
+    }
   }, [time, running, config.sound]);
   useEffect(() => {
     const key = e => {
@@ -379,6 +382,7 @@ function Quiz({ config, onHome, onRecordAttempt, onOpenPerformance, attemptCount
           return <button key={team} disabled={time <= 0 || buzzed !== null || isDenied || revealed} onClick={() => registerBuzz(i)} className={isActive ? `buzzed ${isSteal ? 'steal' : ''}` : isDenied ? 'denied' : ''}><small>{reps[i]} · {team}</small><strong>{isSteal ? 'STEAL FOR 100' : isActive ? 'BUZZED FIRST' : team.toUpperCase()}</strong><span>{isSteal ? 'Host: enter A, B, C or D' : isActive ? 'Say A, B, C or D' : isDenied ? 'Wrong answer' : `Host: press ${i + 1}`}</span></button>;
         })}</div>
         {!revealed && <div className={`answer-status ${denied.length ? 'steal-status' : ''}`}>{time <= 0 ? 'Time’s up — end this theme or restart its 30-second clock.' : buzzed === null ? `Waiting for ${config.teams[0]} or ${config.teams[1]} to yell their team name…` : denied.length ? `Automatic steal for 100 — ${config.teams[buzzed]} can answer A, B, C or D. No second buzz.` : `${config.teams[buzzed]} buzzed first — choose A, B, C or D.`}</div>}
+        {time <= 0 && !revealed && <div className="timeout-panel" role="alert"><div><small>30-second theme complete</small><strong>Time’s up—not frozen.</strong><span>Choose what happens next.</span></div><button onClick={toggleTimer}>Add 30 seconds</button><button className="timeout-next" onClick={next}>End theme & pick another</button></div>}
         <div className="answers">{question.options.map((option, i) => <button key={option} disabled={time <= 0 || buzzed === null || revealed || wrongChoices.includes(i)} onClick={() => handleAnswer(i)} className={`${selected === i ? 'selected' : ''} ${revealed && i === question.answer ? 'correct-auto' : ''} ${wrongChoices.includes(i) ? 'wrong-auto' : ''}`}><b>{String.fromCharCode(65+i)}</b><span>{option}</span></button>)}</div>
         {revealed && <div className="reveal"><strong>{String.fromCharCode(65 + question.answer)} · {question.options[question.answer]}</strong><p>{question.explain}</p><a href={question.source} target="_blank" rel="noreferrer">Check the source ↗</a></div>}
       </section>
